@@ -9,6 +9,8 @@ output: html_document
 library(tidyverse)
 library(dplyr)
 library(triangle)
+library(stats)
+library(Hmisc)
 ```
 
 ## R Markdown
@@ -30,7 +32,7 @@ rtrianglet <- function(n = 1, a, b, c, t.a = NULL, t.b = NULL) {
 }
 
 #takes n draws from a trunctated triangular distrubtion
-Initial.cap <- function(n = 1, pct = 0.2, operating = 64.3, construction = 12.484, proposed = 111.411) { 
+Initial.cap <- function(n = 1, pct = 0.2, operating = 67, construction = 12.484, proposed = 111.411) { 
   # operating <- 64.3 #GW. according to GWEC global offshore wind report 2023
   # under.construction <- 12.484 #GW. According to wikipedia
   # proposed <- 111.411 #GW. According to wikipedia
@@ -48,9 +50,90 @@ Growth.rate <- function(n = 1, min = 0.1, max = 0.5, mode = 0.33) {
   return(draw)
 } #output in %/year
 
-Demand.pull <- function(year) { #input is years after initial year
+Demand.pull <- function(year, anticipation = 5) { #input is actual year, i.e. "2025"
+  #from GWEC offshore wind report 2023
+  operating <- 67
+  pipeline.2033 <- operating + 380 #GW added
+  target.2030 <- 500 #GW. According to IRENA 1.5C compliant scenario
+  target.2050 <- 2500 #GW. According to IRENA 1.5C compliant Scenario
   
+  x <- c(2030, 2050)
+  y <- c(target.2030, target.2050)
+  
+  #apply demand anticipation 
+  year <- year + anticipation
+  
+  if(year < min(x) | year > max(x)) point <- Hmisc::approxExtrap(x,y,xout = year)$y else point <- approx(x, y , xout = year)$y
+  
+  if(point < target.2030) return(target.2030)
+  else if(point > target.2050) return(target.2050)
+  else return(point)
 }
+
+```
+
+```{r Complete one run}
+
+
+Adoption.curve <- function(years = seq(2024, 2050)) {
+  #draw initial parameters
+  init.cap <- Initial.cap()
+  growth.r <- Growth.rate()
+  pull.v <- c()
+  cap.v <- c()
+  
+  # Results.DF <- data.frame(Years = years)
+  for(y in years) {
+    if(y == 2024) {
+      this.cap <- init.cap
+      pull.v <- c(Demand.pull(y))
+      cap.v <- c(this.cap)
+    } else {
+      last.cap <- tail(cap.v,1) #last value in the capacity vector is the last year's capacity
+      pull <- Demand.pull(y) #take the demand pull value for that year
+      pull.v <- c(pull.v, pull)
+      this.cap <- last.cap + growth.r*last.cap*(1-(last.cap/pull))
+      cap.v <- c(cap.v, this.cap)
+    }
+    
+  } 
+  Result.DF <- data.frame(Year = years, Pull = pull.v, Capacity = cap.v)
+  return(Result.DF)
+}
+
+# A <- Adoption.curve()
+```
+
+```{r N runs}
+
+Monte.Carlo <- function(N = 100) {
+  Result <- Adoption.curve() #first run
+  # rownames(Result) <- 2024:2050
+  for(n in 2:N) {
+    this.run <- Adoption.curve()$Capacity
+    Result <- cbind(Result, run = this.run)
+  }
+  colnames(Result) <- c("Year","Pull",seq(1:N))
+  return(Result)
+}
+
+All.Runs <- Monte.Carlo(100)
+
+```
+
+
+```{r Plot}
+plot(x = All.Runs$Year, y = All.Runs$Pull, lty = 2, lwd = 2, pch = 19, type = 'l', 
+     xlim = c(2020, 2060), ylim = c(0, 3000), las = 1, xaxs = 'i', yaxs = 'i',
+     xlab = "Year", ylab = "Global Capacity [GW]")
+points(x = 2030, y = 380 + 67, cex = 2, lwd = 3)
+points(x = 2030, y = 500, cex = 2, lwd = 3, col = 'green')
+points(x = 2050, y = 2500, cex = 2, lwd = 3, col = 'green')
+for(col in 3:ncol(All.Runs)){
+  lines(x = All.Runs$Year, y = All.Runs[ ,col], col = rgb(0,0,1,0.03), lwd = 7)
+}
+
+
 
 ```
 
