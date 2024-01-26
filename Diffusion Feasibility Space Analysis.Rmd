@@ -1,0 +1,56 @@
+---
+title: "Diffusion Feasibility Space Analysis"
+author: "Rudolph Santarromana"
+date: "2024-01-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(dplyr)
+library(triangle)
+```
+
+## R Markdown
+
+```{r Distribution of three parameters}
+
+#draw from a trunctated triangular distribution
+rtrianglet <- function(n = 1, a, b, c, t.a = NULL, t.b = NULL) {
+  # #expected value and variance of a triangular distribution
+  # mu <- (a + b + c)/3
+  # sigma <- 1/18(a^2 + b^2 + c^2 - a*b - a*c - b*c)
+  
+  if(is.null(t.a)) F.a <- ptriangle(a, a, b, c) else F.a <- ptriangle(t.a, a, b, c) #lower trunctation
+  if(is.null(t.b)) F.b <- ptriangle(b, a, b, c) else F.b <- ptriangle(t.b, a, b, c) #upper trunctation
+  
+  u <- runif(n, min = F.a, max = F.b)
+  draw <- qtriangle(u, a, b, c)
+  return(draw)
+}
+
+#takes n draws from a trunctated triangular distrubtion
+Initial.cap <- function(n = 1, pct = 0.2, operating = 64.3, construction = 12.484, proposed = 111.411) { 
+  # operating <- 64.3 #GW. according to GWEC global offshore wind report 2023
+  # under.construction <- 12.484 #GW. According to wikipedia
+  # proposed <- 111.411 #GW. According to wikipedia
+  
+  min <- 0 #min of dist.
+  max <- operating + construction + proposed #max of dist
+  mode <- operating + pct*construction #assume a likely number is that 20% of capacity under construction will be completed. mode of dist
+  
+  draw <- rtrianglet(n = n, a = min, b = max, c = mode, t.a = operating)
+  return(draw) 
+} #output in GW
+
+Growth.rate <- function(n = 1, min = 0.1, max = 0.5, mode = 0.33) {
+  draw <- rtrianglet(n = n, a = 0, b = 1, c = mode, t.a = min, t.b = max)
+  return(draw)
+} #output in %/year
+
+Demand.pull <- function(year) { #input is years after initial year
+  
+}
+
+```
+
