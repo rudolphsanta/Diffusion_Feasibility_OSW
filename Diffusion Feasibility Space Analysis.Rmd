@@ -50,7 +50,7 @@ Growth.rate <- function(n = 1, min = 0.02, max = 0.36, mode = 0.3) {
   return(draw)
 } #output in %/year
 
-Demand.pull <- function(year, anticipation = 3) { #input is actual year, i.e. "2025"
+Demand.pull <- function(year, anticipation = 5) { #input is actual year, i.e. "2025"
   #from GWEC offshore wind report 2023
   operating <- 67
   pipeline.2033 <- operating + 380 #GW added
