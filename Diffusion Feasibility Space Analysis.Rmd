@@ -141,8 +141,8 @@ for(y in 1:nrow(All.Runs)){
 ```
 
 
-```{r Plot}
-plot(x = All.Runs$Year, y = All.Runs$Pull, lty = 2, lwd = 2, pch = 19, type = 'l', 
+```{r VISUALIZE: Plot the figure}
+plot(x = All.Runs$Year, y = All.Runs$Pull, lty = 2, lwd = 2, pch = 19, type = 'n', 
      xlim = c(2024, 2050), ylim = c(0, 3000), las = 1, xaxs = 'i', yaxs = 'i',
      xlab = "Year", ylab = "Global Capacity [GW]")
 points(x = 2030, y = 380 + 67, cex = 2, lwd = 3)
